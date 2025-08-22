@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}通知配置 - 股票消息爬虫管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-bell"></i> 通知配置管理</h1>
+            <a href="{{ url_for('notification.add_notification_config') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 添加通知配置
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> 通知配置列表</h5>
+            </div>
+            <div class="card-body">
+                {% if configs %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>状态</th>
+                                <th>类型</th>
+                                <th>名称</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for config in configs %}
+                            <tr>
+                                <td>
+                                    <span class="status-indicator {{ 'status-active' if config.is_active else 'status-inactive' }}"></span>
+                                    <span class="badge bg-{{ 'success' if config.is_active else 'secondary' }}">
+                                        {{ '启用' if config.is_active else '禁用' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary platform-badge">{{ config.notification_type }}</span>
+                                </td>
+                                <td>{{ config.name }}</td>
+                                <td>
+                                    <small class="text-muted" data-time="{{ config.created_at }}">
+                                        {{ config.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" 
+                                                class="btn btn-outline-{{ 'warning' if config.is_active else 'success' }}" 
+                                                onclick="toggleConfig('notification', {{ config.id }})"
+                                                data-bs-toggle="tooltip" 
+                                                title="{{ '禁用' if config.is_active else '启用' }}">
+                                            <i class="bi bi-{{ 'pause' if config.is_active else 'play' }}"></i>
+                                        </button>
+                                        <a href="{{ url_for('notification.edit_notification_config', config_id=config.id) }}" 
+                                           class="btn btn-outline-primary" 
+                                           title="编辑">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-outline-info" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#notificationModal{{ config.id }}"
+                                                title="查看配置">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-outline-danger" 
+                                                onclick="if(confirmDelete('确定要删除这个通知配置吗？')) { window.location.href='/notification-config/delete/{{ config.id }}'; }"
+                                                title="删除">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- 配置详情模态框 -->
+                            <div class="modal fade" id="notificationModal{{ config.id }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">通知配置详情 - {{ config.name }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <strong>类型:</strong> {{ config.notification_type }}<br>
+                                                    <strong>名称:</strong> {{ config.name }}<br>
+                                                    <strong>状态:</strong> 
+                                                    <span class="badge bg-{{ 'success' if config.is_active else 'secondary' }}">
+                                                        {{ '启用' if config.is_active else '禁用' }}
+                                                    </span>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <strong>创建时间:</strong> {{ config.created_at.strftime('%Y-%m-%d %H:%M:%S') }}<br>
+                                                    <strong>更新时间:</strong> {{ config.updated_at.strftime('%Y-%m-%d %H:%M:%S') if config.updated_at else '未更新' }}
+                                                </div>
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-12">
+                                                    <strong>配置信息:</strong>
+                                                    <pre class="bg-light p-3 mt-2"><code>{{ config.config | tojson(indent=2) if config.config else '无配置' }}</code></pre>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-bell text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="text-muted mt-3">暂无通知配置</h4>
+                    <p class="text-muted">点击上方按钮添加第一个通知配置</p>
+                    <a href="{{ url_for('notification.add_notification_config') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 添加通知配置
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

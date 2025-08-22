@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}爬虫配置 - 股票消息爬虫管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-robot"></i> 爬虫配置管理</h1>
+            <a href="{{ url_for('spider.add_spider_config') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 添加爬虫配置
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> 爬虫配置列表</h5>
+            </div>
+            <div class="card-body">
+                {% if configs %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>状态</th>
+                                <th>平台</th>
+                                <th>用户ID</th>
+                                <th>用户名</th>
+                                <th>定时配置</th>
+                                <th>上次执行</th>
+                                <th>下次执行</th>
+                                <th>创建时间</th>
+                                <th>通知配置</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        
+                        <tbody>
+                            {% for config in configs %}
+                            <tr>
+                                <td>
+                                    <span class="badge {{ 'bg-success' if config.enabled else 'bg-secondary' }}">
+                                        {{ '启用' if config.enabled else '禁用' }}
+                                    </span>
+                                </td>
+                                <td>{{ config.platform }}</td>
+                                <td>{{ config.user_id }}</td>
+                                <td>{{ config.username or '-' }}</td>
+                                <td>
+                                    {% if config.schedule_enabled %}
+                                        <span class="badge bg-info">
+                                            {% if config.schedule_type == 'interval' %}
+                                                间隔: {{ config.schedule_interval }}秒
+                                            {% else %}
+                                                Cron: {{ config.cron_expression }}
+                                            {% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">已禁用</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if config.last_run_time %}
+                                        {{ config.last_run_time.strftime('%m-%d %H:%M') }}
+                                    {% else %}
+                                        <span class="text-muted">未执行</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if config.next_run_time %}
+                                        {{ config.next_run_time.strftime('%m-%d %H:%M') }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ config.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    {% if config.notification_configs %}
+                                        {% for notif in config.notification_configs %}
+                                            <span class="badge bg-primary me-1">{{ notif.method }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">无</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleExpandRow({{ config.id }})">
+                                            <i class="bi bi-chevron-down" id="expand-icon-{{ config.id }}"></i> 展开
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-success" onclick="manualExecute({{ config.id }})">
+                                            <i class="bi bi-play-circle"></i> 执行
+                                        </button>
+                                        <a href="{{ url_for('spider.edit_spider_notification', config_id=config.id) }}" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-bell"></i> 通知
+                                        </a>
+                                        <button type="button" class="btn btn-sm {{ 'btn-outline-danger' if config.enabled else 'btn-outline-success' }}" onclick="toggleSpider({{ config.id }})">
+                                            <i class="bi {{ 'bi-pause' if config.enabled else 'bi-play' }}"></i>
+                                            {{ '禁用' if config.enabled else '启用' }}
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- 添加展开行 -->
+                            <tr id="expand-row-{{ config.id }}" style="display: none;">
+                                <td colspan="10">
+                                    <div class="p-3 bg-light">
+                                        <h6><i class="bi bi-clock-history"></i> 最近数据</h6>
+                                        <div id="recent-data-{{ config.id }}">
+                                            <!-- 数据将通过AJAX加载 -->
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-robot text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="text-muted mt-3">暂无爬虫配置</h4>
+                    <p class="text-muted">点击上方按钮添加第一个爬虫配置</p>
+                    <a href="{{ url_for('spider.add_spider_config') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 添加爬虫配置
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleExpandRow(configId) {
+    const expandRow = document.getElementById(`expand-row-${configId}`);
+    const icon = document.getElementById(`expand-icon-${configId}`);
+    
+    if (expandRow.style.display === 'none') {
+        expandRow.style.display = 'table-row';
+        icon.classList.remove('bi-chevron-down');
+        icon.classList.add('bi-chevron-up');
+        // 加载数据
+        loadRecentData(configId);
+    } else {
+        expandRow.style.display = 'none';
+        icon.classList.remove('bi-chevron-up');
+        icon.classList.add('bi-chevron-down');
+    }
+}
+
+function manualExecute(configId) {
+    if (confirm('确定要手动执行此爬虫配置吗？')) {
+        const button = event.target.closest('button');
+        const originalHtml = button.innerHTML;
+        
+        // 显示加载状态
+        button.innerHTML = '<i class="bi bi-hourglass-split"></i> 执行中...';
+        button.disabled = true;
+        
+        // 发起AJAX请求
+        fetch(`/api/spider/manual-execute/${configId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('爬虫执行成功！');
+                // 如果展开行是显示状态，刷新数据
+                const expandRow = document.getElementById(`expand-row-${configId}`);
+                if (expandRow.style.display === 'table-row') {
+                    loadRecentData(configId);
+                }
+            } else {
+                alert('爬虫执行失败：' + (data.message || '未知错误'));
+            }
+        })
+        .catch(error => {
+            console.error('执行失败:', error);
+            alert('网络请求失败，请稍后重试');
+        })
+        .finally(() => {
+            // 恢复按钮状态
+            button.innerHTML = originalHtml;
+            button.disabled = false;
+        });
+    }
+}
+
+function loadRecentData(configId) {
+    const container = document.getElementById(`recent-data-${configId}`);
+    
+    // 显示加载状态
+    container.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <span class="ms-2">正在获取数据...</span>
+        </div>
+    `;
+    
+    // 发起AJAX请求
+    fetch(`/spider-config/recent-data/${configId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.data && data.data.length > 0) {
+                    let html = `
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle"></i> ${data.message}
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>帖子ID</th>
+                                        <th>内容预览</th>
+                                        <th>发帖时间</th>
+                                        <th>爬取时间</th>
+                                        <th>推送状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    data.data.forEach(post => {
+                        html += `
+                            <tr>
+                                <td><code>${post.post_id}</code></td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 300px;" title="${post.content}">
+                                        ${post.content}
+                                    </div>
+                                </td>
+                                <td><small class="text-muted">${post.post_time}</small></td>
+                                <td><small class="text-muted">${post.created_at}</small></td>
+                                <td>
+                                    <span class="badge bg-${post.is_sent ? 'success' : 'warning'}">
+                                        ${post.is_sent ? '已推送' : '未推送'}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> ${data.message || '暂无数据'}
+                        </div>
+                    `;
+                }
+            } else {
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-circle"></i> ${data.message || '获取数据失败'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('获取数据失败:', error);
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-circle"></i> 网络请求失败，请稍后重试
+                </div>
+            `;
+        });
+}
+</script>
+{% endblock %}

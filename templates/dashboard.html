@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}仪表板 - 股票消息爬虫管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="bi bi-speedometer2"></i> 系统仪表板</h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.get('active_spiders', 0) }}</h4>
+                        <p class="mb-0">活跃爬虫</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-robot fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.get('active_notifications', 0) }}</h4>
+                        <p class="mb-0">活跃通知</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-bell fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.get('posts_today', 0) }}</h4>
+                        <p class="mb-0">今日消息</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-chat-dots fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-{{ 'danger' if stats.get('errors_today', 0) > 0 else 'secondary' }} text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.get('errors_today', 0) }}</h4>
+                        <p class="mb-0">今日错误</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-exclamation-triangle fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-activity"></i> 爬虫运行状态</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>运行状态:</strong>
+                    <span class="badge bg-{{ 'success' if stats.get('spider_status', {}).get('running') else 'secondary' }}">
+                        {{ '运行中' if stats.get('spider_status', {}).get('running') else '已停止' }}
+                    </span>
+                </div>
+                {% if stats.get('spider_status', {}).get('last_run') %}
+                <div class="mb-3">
+                    <strong>上次运行:</strong> {{ stats.spider_status.last_run }}
+                </div>
+                {% endif %}
+                {% if stats.get('spider_status', {}).get('next_run') %}
+                <div class="mb-3">
+                    <strong>下次运行:</strong> {{ stats.spider_status.next_run }}
+                </div>
+                {% endif %}
+                <div class="mb-3">
+                    <strong>总消息数:</strong> {{ stats.get('spider_status', {}).get('total_posts', 0) }}
+                </div>
+                <div>
+                    <strong>总通知数:</strong> {{ stats.get('spider_status', {}).get('total_notifications', 0) }}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-journal-text"></i> 最近日志</h5>
+            </div>
+            <div class="card-body">
+                {% if stats.get('recent_logs') %}
+                    <div class="log-container" style="max-height: 300px; overflow-y: auto;">
+                        {% for log in stats.recent_logs %}
+                        <div class="log-entry mb-2 p-2 border-start border-3 border-{{ 'danger' if log.level == 'ERROR' else 'warning' if log.level == 'WARNING' else 'info' }}">
+                            <div class="d-flex justify-content-between">
+                                <span class="badge bg-{{ 'danger' if log.level == 'ERROR' else 'warning' if log.level == 'WARNING' else 'info' }}">{{ log.level }}</span>
+                                <small class="text-muted">{{ log.created_at.strftime('%H:%M:%S') }}</small>
+                            </div>
+                            <div class="mt-1">
+                                <strong>{{ log.module }}:</strong> {{ log.message }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">暂无日志记录</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 每30秒刷新一次统计数据
+setInterval(function() {
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            // 更新统计数据
+            if (!data.error) {
+                // 这里可以添加动态更新逻辑
+                console.log('Stats updated:', data);
+            }
+        })
+        .catch(error => console.error('Error fetching stats:', error));
+}, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}消息展示 - 股票消息爬虫管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4"><i class="bi bi-chat-dots"></i> 消息展示</h1>
+    </div>
+</div>
+
+<!-- 筛选器 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-funnel"></i> 筛选条件</h6>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="platform" class="form-label">平台</label>
+                        <select class="form-select" id="platform" name="platform">
+                            <option value="">全部平台</option>
+                            {% for platform in platforms %}
+                            <option value="{{ platform }}" {{ 'selected' if platform == current_platform }}>{{ platform.title() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="user_id" class="form-label">用户</label>
+                        <select class="form-select" id="user_id" name="user_id">
+                            <option value="">全部用户</option>
+                            {% for user in users %}
+                            <option value="{{ user.user_id }}" {{ 'selected' if user.user_id == current_user_id }}>
+                                {{ user.username }} ({{ user.platform }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="limit" class="form-label">显示条数</label>
+                        <select class="form-select" id="limit" name="limit">
+                            <option value="20" {{ 'selected' if current_limit == 20 }}>20条</option>
+                            <option value="50" {{ 'selected' if current_limit == 50 }}>50条</option>
+                            <option value="100" {{ 'selected' if current_limit == 100 }}>100条</option>
+                            <option value="200" {{ 'selected' if current_limit == 200 }}>200条</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> 筛选
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 消息列表 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> 消息列表</h5>
+                <span class="badge bg-info">共 {{ posts|length }} 条消息</span>
+            </div>
+            <div class="card-body">
+                {% if posts %}
+                <div class="row">
+                    {% for post in posts %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-info">{{ post.platform }}</span>
+                                    <small class="text-muted">{{ post.post_time.strftime('%m-%d %H:%M') if post.post_time else '未知时间' }}</small>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-person-circle"></i> {{ post.username }}
+                                </h6>
+                                <div class="card-text message-content text-truncate-3">
+                                    {{ (post.processed_content or post.content)|safe }}
+                                </div>
+                            </div>
+                            <div class="card-footer py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i> {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </small>
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#messageModal{{ loop.index }}"
+                                            title="查看详情">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 消息详情模态框 -->
+                        <div class="modal fade" id="messageModal{{ loop.index }}" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">
+                                            <span class="badge bg-info me-2">{{ post.platform }}</span>
+                                            {{ post.username }}
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <strong>用户ID:</strong> <code>{{ post.user_id }}</code><br>
+                                                <strong>用户名:</strong> {{ post.username }}<br>
+                                                <strong>平台:</strong> {{ post.platform }}
+                                            </div>
+                                            <div class="col-md-6">
+                                                <strong>发布时间:</strong> {{ post.post_time.strftime('%Y-%m-%d %H:%M:%S') if post.post_time else '未知' }}<br>
+                                                <strong>抓取时间:</strong> {{ post.created_at.strftime('%Y-%m-%d %H:%M:%S') }}<br>
+                                                <strong>消息ID:</strong> <code>{{ post.post_id }}</code>
+                                            </div>
+                                        </div>
+                                        <hr>
+                                        <div class="mb-3">
+                                            <strong>消息内容:</strong>
+                                            <div class="bg-light p-3 mt-2 rounded message-content-full">
+                                                {{ (post.processed_content or post.content)|safe }}
+                                            </div>
+                                        </div>
+                                        {% if post.url %}
+                                        <div class="mb-3">
+                                            <strong>原文链接:</strong>
+                                            <a href="{{ post.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-link-45deg"></i> 查看原文
+                                            </a>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- 分页 -->
+                {% if pagination.pages > 1 %}
+                <nav aria-label="消息分页">
+                    <ul class="pagination justify-content-center">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('message.messages', page=pagination.prev_num, platform=current_platform, user_id=current_user_id, limit=current_limit) }}">
+                                <i class="bi bi-chevron-left"></i> 上一页
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in range(1, pagination.pages + 1) %}
+                            {% if page_num == pagination.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% elif page_num <= 3 or page_num > pagination.pages - 3 or (page_num >= pagination.page - 1 and page_num <= pagination.page + 1) %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('message.messages', page=page_num, platform=current_platform, user_id=current_user_id, limit=current_limit) }}">{{ page_num }}</a>
+                            </li>
+                            {% elif page_num == 4 or page_num == pagination.pages - 3 %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('message.messages', page=pagination.next_num, platform=current_platform, user_id=current_user_id, limit=current_limit) }}">
+                                下一页 <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h5 class="mt-3 text-muted">暂无消息数据</h5>
+                    <p class="text-muted">请检查爬虫配置是否正确运行</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图片放大模态框 -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-transparent border-0">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body text-center p-0">
+                <img id="modalImage" src="" alt="放大图片" class="img-fluid" style="max-height: 80vh; max-width: 100%;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.message-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 5px 0;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.message-content img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.message-content-full img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 10px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.message-content-full img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.text-truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+#imageModal .modal-content {
+    background: rgba(0, 0, 0, 0.9) !important;
+}
+
+#imageModal .modal-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+}
+</style>
+{% endblock %}

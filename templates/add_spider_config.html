@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}添加爬虫配置 - 股票消息爬虫管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-plus-circle"></i> 添加爬虫配置</h1>
+            <a href="{{ url_for('spider.spider_config') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> 配置信息</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="platform" class="form-label">平台 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="platform" name="platform" required onchange="updatePlatformFields()">
+                                    <option value="">请选择平台</option>
+                                    {% for platform in platforms %}
+                                    <option value="{{ platform }}">{{ platform.title() }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="user_id" class="form-label">用户ID <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="user_id" name="user_id" required 
+                                       placeholder="请输入要监控的用户ID">
+                                <div class="form-text">要监控的用户在该平台的唯一标识</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="username" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               placeholder="用户显示名称（可选）">
+                        <div class="form-text">用于显示的用户名，可选填</div>
+                    </div>
+                    
+                    <hr>
+                    <h6><i class="bi bi-shield-lock"></i> 认证配置</h6>
+                    
+                    <div class="mb-3">
+                        <label for="cookies" class="form-label">Cookies</label>
+                        <textarea class="form-control" id="cookies" name="cookies" rows="3" 
+                                  placeholder="请输入登录后的Cookies信息"></textarea>
+                        <div class="form-text">从浏览器开发者工具中复制的Cookie字符串</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="headers" class="form-label">请求头</label>
+                        <textarea class="form-control" id="headers" name="headers" rows="3" 
+                                  placeholder='例如: {"User-Agent": "...", "Referer": "..."}'></textarea>
+                        <div class="form-text">JSON格式的请求头信息</div>
+                    </div>
+                    
+                    <div class="mb-3" id="token-field" style="display: none;">
+                        <label for="token" class="form-label">访问令牌</label>
+                        <input type="text" class="form-control" id="token" name="token" 
+                               placeholder="API访问令牌">
+                        <div class="form-text">某些平台需要的API访问令牌</div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>配置说明：</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>雪球：</strong> 需要登录后的Cookies，包含xq_a_token等信息</li>
+                            <li><strong>微博：</strong> 需要登录后的Cookies和User-Agent</li>
+                            <li><strong>东财：</strong> 需要登录后的Cookies</li>
+                            <li><strong>淘股吧：</strong> 需要登录后的Cookies</li>
+                            <li><strong>Twitter：</strong> 需要API访问令牌</li>
+                        </ul>
+                    </div>
+                    
+                    <hr>
+                    <h6><i class="bi bi-bell"></i> 通知配置</h6>
+                    
+                    <div class="mb-3">
+                        <label for="notification_config_id" class="form-label">选择通知配置</label>
+                        <select class="form-control" id="notification_config_id" name="notification_config_id" required>
+                            <option value="">请选择通知配置</option>
+                            {% for config in notification_configs %}
+                            <option value="{{ config.id }}">{{ config.config.name }} ({{ config.method }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">选择用于推送此爬虫消息的通知配置</div>
+                    </div>
+                    
+                    <hr>
+                    <h6><i class="bi bi-clock"></i> 定时配置</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="schedule_enabled" name="schedule_enabled" checked>
+                                <label class="form-check-label" for="schedule_enabled">
+                                    启用定时执行
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="schedule_config" class="schedule-config">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="schedule_type" class="form-label">调度类型</label>
+                                    <select class="form-select" id="schedule_type" name="schedule_type">
+                                        <option value="interval" selected>间隔执行</option>
+                                        <option value="cron">定时执行</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 间隔执行配置 -->
+                        <div id="interval_config" class="schedule-option">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="schedule_interval" class="form-label">执行间隔</label>
+                                        <select class="form-select" id="schedule_interval" name="schedule_interval">
+                                            <option value="60" selected>1分钟</option>
+                                            <option value="300">5分钟</option>
+                                            <option value="600">10分钟</option>
+                                            <option value="1800">30分钟</option>
+                                            <option value="3600">1小时</option>
+                                            <option value="7200">2小时</option>
+                                            <option value="21600">6小时</option>
+                                            <option value="43200">12小时</option>
+                                            <option value="86400">24小时</option>
+                                            <option value="custom">自定义</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3" id="custom_interval_group" style="display: none;">
+                                        <label for="custom_interval" class="form-label">自定义间隔（秒）</label>
+                                        <input type="number" class="form-control" id="custom_interval" name="custom_interval" min="60" placeholder="输入秒数">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cron表达式配置 -->
+                        <div id="cron_config" class="schedule-option" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label for="cron_expression" class="form-label">Cron表达式</label>
+                                        <input type="text" class="form-control" id="cron_expression" name="cron_expression" placeholder="例如: 0 */30 * * * (每30分钟执行一次)">
+                                        <div class="form-text">
+                                            格式：秒 分 时 日 月 周<br>
+                                            示例：<br>
+                                            • <code>0 */5 * * * *</code> - 每5分钟执行<br>
+                                            • <code>0 0 */2 * * *</code> - 每2小时执行<br>
+                                            • <code>0 0 9 * * *</code> - 每天9点执行
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('spider.spider_config') }}" class="btn btn-outline-secondary me-md-2">
+                            <i class="bi bi-x-circle"></i> 取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> 保存配置
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updatePlatformFields() {
+    const platform = document.getElementById('platform').value;
+    const tokenField = document.getElementById('token-field');
+    
+    if (platform === 'twitter') {
+        tokenField.style.display = 'block';
+    } else {
+        tokenField.style.display = 'none';
+    }
+}
+
+// 定时配置相关JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    const scheduleEnabled = document.getElementById('schedule_enabled');
+    const scheduleConfig = document.getElementById('schedule_config');
+    const scheduleType = document.getElementById('schedule_type');
+    const intervalConfig = document.getElementById('interval_config');
+    const cronConfig = document.getElementById('cron_config');
+    const scheduleInterval = document.getElementById('schedule_interval');
+    const customIntervalGroup = document.getElementById('custom_interval_group');
+    
+    // 切换定时配置显示
+    scheduleEnabled.addEventListener('change', function() {
+        scheduleConfig.style.display = this.checked ? 'block' : 'none';
+    });
+    
+    // 切换调度类型
+    scheduleType.addEventListener('change', function() {
+        if (this.value === 'interval') {
+            intervalConfig.style.display = 'block';
+            cronConfig.style.display = 'none';
+        } else {
+            intervalConfig.style.display = 'none';
+            cronConfig.style.display = 'block';
+        }
+    });
+    
+    // 切换自定义间隔
+    scheduleInterval.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customIntervalGroup.style.display = 'block';
+        } else {
+            customIntervalGroup.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

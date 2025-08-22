@@ -1,0 +1,50 @@
+2025-08-21 17:16:51 | INFO     | __main__:<module>:7 - 启动Web管理界面服务器
+2025-08-21 17:16:53 | INFO     | __main__:<module>:7 - 启动Web管理界面服务器
+2025-08-21 17:16:57 | INFO     | web.routes.dashboard:dashboard:15 - 访问仪表板页面
+2025-08-21 17:16:57 | ERROR    | web.routes.dashboard:dashboard:55 - 获取仪表板数据失败: (pymysql.err.OperationalError) (1054, "Unknown column 'spider_config.notification_config_id' in 'field list'")
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT spider_config.id AS spider_config_id, spider_config.platform AS spider_config_platform, spider_config.user_id AS spider_config_user_id, spider_config.username AS spider_config_username, spider_config.auth_config AS spider_config_auth_config, spider_config.notification_config_id AS spider_config_notification_config_id, spider_config.is_active AS spider_config_is_active, spider_config.created_at AS spider_config_created_at, spider_config.updated_at AS spider_config_updated_at 
+FROM spider_config 
+WHERE spider_config.is_active = true) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-21 17:16:58 | INFO     | web.routes.dashboard:dashboard:15 - 访问仪表板页面
+2025-08-21 17:16:58 | ERROR    | web.routes.dashboard:dashboard:55 - 获取仪表板数据失败: (pymysql.err.OperationalError) (1054, "Unknown column 'spider_config.notification_config_id' in 'field list'")
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT spider_config.id AS spider_config_id, spider_config.platform AS spider_config_platform, spider_config.user_id AS spider_config_user_id, spider_config.username AS spider_config_username, spider_config.auth_config AS spider_config_auth_config, spider_config.notification_config_id AS spider_config_notification_config_id, spider_config.is_active AS spider_config_is_active, spider_config.created_at AS spider_config_created_at, spider_config.updated_at AS spider_config_updated_at 
+FROM spider_config 
+WHERE spider_config.is_active = true) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-21 17:17:14 | INFO     | __main__:<module>:7 - 启动Web管理界面服务器
+2025-08-21 17:17:14 | INFO     | __main__:<module>:7 - 启动Web管理界面服务器
+2025-08-21 17:17:18 | INFO     | web.routes.dashboard:dashboard:15 - 访问仪表板页面
+2025-08-21 17:17:18 | ERROR    | web.routes.dashboard:dashboard:55 - 获取仪表板数据失败: (pymysql.err.OperationalError) (1054, "Unknown column 'spider_config.notification_config_id' in 'field list'")
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT spider_config.id AS spider_config_id, spider_config.platform AS spider_config_platform, spider_config.user_id AS spider_config_user_id, spider_config.username AS spider_config_username, spider_config.auth_config AS spider_config_auth_config, spider_config.notification_config_id AS spider_config_notification_config_id, spider_config.is_active AS spider_config_is_active, spider_config.created_at AS spider_config_created_at, spider_config.updated_at AS spider_config_updated_at 
+FROM spider_config 
+WHERE spider_config.is_active = true) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-21 17:17:34 | INFO     | __main__:<module>:7 - 启动Web管理界面服务器
+2025-08-21 17:17:35 | INFO     | __main__:<module>:7 - 启动Web管理界面服务器
+2025-08-21 17:20:06 | INFO     | __main__:<module>:7 - 启动Web管理界面服务器
+2025-08-21 17:20:06 | INFO     | __main__:<module>:7 - 启动Web管理界面服务器
+2025-08-21 17:20:18 | INFO     | web.routes.dashboard:dashboard:15 - 访问仪表板页面
+2025-08-21 17:20:18 | ERROR    | web.routes.dashboard:dashboard:55 - 获取仪表板数据失败: (pymysql.err.OperationalError) (1054, "Unknown column 'spider_config.notification_config_id' in 'field list'")
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT spider_config.id AS spider_config_id, spider_config.platform AS spider_config_platform, spider_config.user_id AS spider_config_user_id, spider_config.username AS spider_config_username, spider_config.auth_config AS spider_config_auth_config, spider_config.notification_config_id AS spider_config_notification_config_id, spider_config.is_active AS spider_config_is_active, spider_config.created_at AS spider_config_created_at, spider_config.updated_at AS spider_config_updated_at 
+FROM spider_config 
+WHERE spider_config.is_active = true) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-21 17:20:21 | INFO     | web.routes.dashboard:dashboard:15 - 访问仪表板页面
+2025-08-21 17:20:21 | ERROR    | web.routes.dashboard:dashboard:55 - 获取仪表板数据失败: (pymysql.err.OperationalError) (1054, "Unknown column 'spider_config.notification_config_id' in 'field list'")
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT spider_config.id AS spider_config_id, spider_config.platform AS spider_config_platform, spider_config.user_id AS spider_config_user_id, spider_config.username AS spider_config_username, spider_config.auth_config AS spider_config_auth_config, spider_config.notification_config_id AS spider_config_notification_config_id, spider_config.is_active AS spider_config_is_active, spider_config.created_at AS spider_config_created_at, spider_config.updated_at AS spider_config_updated_at 
+FROM spider_config 
+WHERE spider_config.is_active = true) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-21 17:20:22 | INFO     | web.routes.dashboard:dashboard:15 - 访问仪表板页面
+2025-08-21 17:20:22 | ERROR    | web.routes.dashboard:dashboard:55 - 获取仪表板数据失败: (pymysql.err.OperationalError) (1054, "Unknown column 'spider_config.notification_config_id' in 'field list'")
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT spider_config.id AS spider_config_id, spider_config.platform AS spider_config_platform, spider_config.user_id AS spider_config_user_id, spider_config.username AS spider_config_username, spider_config.auth_config AS spider_config_auth_config, spider_config.notification_config_id AS spider_config_notification_config_id, spider_config.is_active AS spider_config_is_active, spider_config.created_at AS spider_config_created_at, spider_config.updated_at AS spider_config_updated_at 
+FROM spider_config 
+WHERE spider_config.is_active = true) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}添加通知配置 - 股票消息爬虫管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-plus-circle"></i> 添加通知配置</h1>
+            <a href="{{ url_for('notification.notification_config') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> 通知配置信息</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="notificationForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="notification_type" class="form-label">通知类型 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="notification_type" name="notification_type" required onchange="updateNotificationFields()">
+                                    <option value="">请选择通知类型</option>
+                                    {% for type in notification_types %}
+                                    <option value="{{ type }}">{{ type.title() }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">配置名称 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" required 
+                                       placeholder="请输入配置名称">
+                                <div class="form-text">用于标识这个通知配置的名称</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 邮件配置 -->
+                    <div id="email-config" class="notification-config" style="display: none;">
+                        <hr>
+                        <h6><i class="bi bi-envelope"></i> 邮件配置</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="smtp_server" class="form-label">SMTP服务器</label>
+                                    <input type="text" class="form-control" id="smtp_server" name="smtp_server" 
+                                           placeholder="例如: smtp.gmail.com">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="smtp_port" class="form-label">SMTP端口</label>
+                                    <input type="number" class="form-control" id="smtp_port" name="smtp_port" 
+                                           placeholder="例如: 587" value="587">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email_username" class="form-label">邮箱用户名</label>
+                                    <input type="email" class="form-control" id="email_username" name="email_username" 
+                                           placeholder="your-email@example.com">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email_password" class="form-label">邮箱密码</label>
+                                    <input type="password" class="form-control" id="email_password" name="email_password" 
+                                           placeholder="邮箱密码或应用专用密码">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="from_email" class="form-label">发件人邮箱</label>
+                                    <input type="email" class="form-control" id="from_email" name="from_email" 
+                                           placeholder="sender@example.com">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="to_emails" class="form-label">收件人邮箱</label>
+                                    <input type="text" class="form-control" id="to_emails" name="to_emails" 
+                                           placeholder="email1@example.com,email2@example.com">
+                                    <div class="form-text">多个邮箱用逗号分隔</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 钉钉配置 -->
+                    <div id="dingtalk-config" class="notification-config" style="display: none;">
+                        <hr>
+                        <h6><i class="bi bi-chat-dots"></i> 钉钉配置</h6>
+                        <div class="mb-3">
+                            <label for="webhook_url" class="form-label">Webhook URL</label>
+                            <input type="url" class="form-control" id="webhook_url" name="webhook_url" 
+                                   placeholder="https://oapi.dingtalk.com/robot/send?access_token=...">
+                        </div>
+                        <div class="mb-3">
+                            <label for="secret" class="form-label">加签密钥</label>
+                            <input type="text" class="form-control" id="secret" name="secret" 
+                                   placeholder="SEC...（可选）">
+                            <div class="form-text">如果机器人设置了加签，请填入密钥</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 飞书配置 -->
+                    <div id="feishu-config" class="notification-config" style="display: none;">
+                        <hr>
+                        <h6><i class="bi bi-chat-square-dots"></i> 飞书配置</h6>
+                        <div class="mb-3">
+                            <label for="feishu_webhook_url" class="form-label">Webhook URL</label>
+                            <input type="url" class="form-control" id="feishu_webhook_url" name="webhook_url" 
+                                   placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/...">
+                        </div>
+                        <div class="mb-3">
+                            <label for="feishu_secret" class="form-label">签名校验</label>
+                            <input type="text" class="form-control" id="feishu_secret" name="secret" 
+                                   placeholder="签名校验密钥（可选）">
+                        </div>
+                    </div>
+                    
+                    <!-- 企业微信配置 -->
+                    <div id="wechat_work-config" class="notification-config" style="display: none;">
+                        <hr>
+                        <h6><i class="bi bi-wechat"></i> 企业微信配置</h6>
+                        <div class="mb-3">
+                            <label for="wechat_webhook_url" class="form-label">Webhook URL</label>
+                            <input type="url" class="form-control" id="wechat_webhook_url" name="webhook_url" 
+                                   placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...">
+                        </div>
+                    </div>
+                    
+                    <!-- 微信公众号配置 -->
+                    <div id="wechat_mp-config" class="notification-config" style="display: none;">
+                        <hr>
+                        <h6><i class="bi bi-wechat"></i> 微信公众号配置</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="appid" class="form-label">AppID</label>
+                                    <input type="text" class="form-control" id="appid" name="appid" 
+                                           placeholder="微信公众号AppID">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="wechat_secret" class="form-label">AppSecret</label>
+                                    <input type="password" class="form-control" id="wechat_secret" name="wechat_secret" 
+                                           placeholder="微信公众号AppSecret">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="template_id" class="form-label">模板ID</label>
+                                    <input type="text" class="form-control" id="template_id" name="template_id" 
+                                           placeholder="消息模板ID">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="openids" class="form-label">用户OpenID</label>
+                                    <input type="text" class="form-control" id="openids" name="openids" 
+                                           placeholder="openid1,openid2,openid3">
+                                    <div class="form-text">多个OpenID用逗号分隔</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('notification.notification_config') }}" class="btn btn-outline-secondary me-md-2">
+                            <i class="bi bi-x-circle"></i> 取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> 保存配置
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateNotificationFields() {
+    const notificationType = document.getElementById('notification_type').value;
+    const configs = document.querySelectorAll('.notification-config');
+    
+    // 隐藏所有配置区域
+    configs.forEach(config => {
+        config.style.display = 'none';
+    });
+    
+    // 显示选中的配置区域
+    if (notificationType) {
+        const selectedConfig = document.getElementById(notificationType + '-config');
+        if (selectedConfig) {
+            selectedConfig.style.display = 'block';
+        }
+    }
+}
+</script>
+{% endblock %}
