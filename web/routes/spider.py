@@ -20,16 +20,17 @@ def spider_config():
         configs_data = []
         for config in configs:
             # 修复：使用多对多关系获取通知配置
-            notification_names = []
+            notification_configs = []
             try:
                 if config.notification_configs:
                     for notif_config in config.notification_configs:
-                        name = f"{notif_config.config.get('name', '未命名')} ({notif_config.method})"
-                        notification_names.append(name)
+                        notification_configs.append({
+                            'id': notif_config.id,
+                            'method': notif_config.method,
+                            'name': notif_config.config.get('name', '未命名')
+                        })
             except Exception as e:
                 logger.warning(f"获取配置{config.id}的通知配置失败: {str(e)}")
-            
-            notification_name = ", ".join(notification_names) if notification_names else "未配置"
             
             # 格式化定时配置显示
             if config.schedule_enabled:
@@ -46,8 +47,7 @@ def spider_config():
                 'user_id': config.user_id,
                 'username': config.username,
                 'auth_config': config.auth_config or {},
-                'notification_config_ids': [nc.id for nc in config.notification_configs] if hasattr(config, 'notification_configs') else [],
-                'notification_name': notification_name,
+                'notification_configs': notification_configs,  # 修复：添加正确的字段
                 'is_active': config.is_active,
                 'enabled': config.is_active,
                 'name': f"{config.platform}_{config.user_id}",

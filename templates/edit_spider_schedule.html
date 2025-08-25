@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}编辑定时配置 - 股票消息爬虫管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-clock"></i> 编辑定时配置</h1>
+            <a href="{{ url_for('spider.spider_config') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> 定时配置</h5>
+            </div>
+            <div class="card-body">
+                <!-- 显示爬虫配置信息 -->
+                <div class="mb-3">
+                    <label class="form-label">爬虫配置信息:</label>
+                    <div class="alert alert-info">
+                        <strong>平台:</strong> {{ config.platform }}<br>
+                        <strong>用户ID:</strong> {{ config.user_id }}<br>
+                        <strong>用户名:</strong> {{ config.username or '未设置' }}
+                    </div>
+                </div>
+                
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="schedule_enabled" name="schedule_enabled" 
+                                       {{ 'checked' if config.schedule_enabled else '' }}>
+                                <label class="form-check-label" for="schedule_enabled">
+                                    启用定时执行
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="schedule_config" class="schedule-config" style="{{ 'display: block;' if config.schedule_enabled else 'display: none;' }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="schedule_type" class="form-label">调度类型</label>
+                                    <select class="form-select" id="schedule_type" name="schedule_type">
+                                        <option value="interval" {{ 'selected' if config.schedule_type == 'interval' else '' }}>间隔执行</option>
+                                        <option value="cron" {{ 'selected' if config.schedule_type == 'cron' else '' }}>定时执行</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 间隔执行配置 -->
+                        <div id="interval_config" class="schedule-option" style="{{ 'display: block;' if config.schedule_type == 'interval' else 'display: none;' }}">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="schedule_interval" class="form-label">执行间隔</label>
+                                        <select class="form-select" id="schedule_interval" name="schedule_interval">
+                                            <option value="60" {{ 'selected' if config.schedule_interval == 60 else '' }}>1分钟</option>
+                                            <option value="300" {{ 'selected' if config.schedule_interval == 300 else '' }}>5分钟</option>
+                                            <option value="600" {{ 'selected' if config.schedule_interval == 600 else '' }}>10分钟</option>
+                                            <option value="1800" {{ 'selected' if config.schedule_interval == 1800 else '' }}>30分钟</option>
+                                            <option value="3600" {{ 'selected' if config.schedule_interval == 3600 else '' }}>1小时</option>
+                                            <option value="7200" {{ 'selected' if config.schedule_interval == 7200 else '' }}>2小时</option>
+                                            <option value="21600" {{ 'selected' if config.schedule_interval == 21600 else '' }}>6小时</option>
+                                            <option value="43200" {{ 'selected' if config.schedule_interval == 43200 else '' }}>12小时</option>
+                                            <option value="86400" {{ 'selected' if config.schedule_interval == 86400 else '' }}>24小时</option>
+                                            <option value="custom" {{ 'selected' if config.schedule_interval not in [60, 300, 600, 1800, 3600, 7200, 21600, 43200, 86400] else '' }}>自定义</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3" id="custom_interval_group" style="{{ 'display: block;' if config.schedule_interval not in [60, 300, 600, 1800, 3600, 7200, 21600, 43200, 86400] else 'display: none;' }}">
+                                        <label for="custom_interval" class="form-label">自定义间隔（秒）</label>
+                                        <input type="number" class="form-control" id="custom_interval" name="custom_interval" 
+                                               min="60" placeholder="输入秒数" 
+                                               value="{{ config.schedule_interval if config.schedule_interval not in [60, 300, 600, 1800, 3600, 7200, 21600, 43200, 86400] else '' }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cron表达式配置 -->
+                        <div id="cron_config" class="schedule-option" style="{{ 'display: block;' if config.schedule_type == 'cron' else 'display: none;' }}">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label for="cron_expression" class="form-label">Cron表达式</label>
+                                        <input type="text" class="form-control" id="cron_expression" name="cron_expression" 
+                                               placeholder="例如: 0 */30 * * * (每30分钟执行一次)" 
+                                               value="{{ config.cron_expression or '' }}">
+                                        <div class="form-text">
+                                            格式：秒 分 时 日 月 周<br>
+                                            示例：<br>
+                                            • <code>0 */5 * * * *</code> - 每5分钟执行<br>
+                                            • <code>0 0 */2 * * *</code> - 每2小时执行<br>
+                                            • <code>0 0 9 * * *</code> - 每天9点执行
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('spider.spider_config') }}" class="btn btn-outline-secondary me-md-2">
+                            <i class="bi bi-x-circle"></i> 取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> 保存配置
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 定时配置相关JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    const scheduleEnabled = document.getElementById('schedule_enabled');
+    const scheduleConfig = document.getElementById('schedule_config');
+    const scheduleType = document.getElementById('schedule_type');
+    const intervalConfig = document.getElementById('interval_config');
+    const cronConfig = document.getElementById('cron_config');
+    const scheduleInterval = document.getElementById('schedule_interval');
+    const customIntervalGroup = document.getElementById('custom_interval_group');
+    
+    // 切换定时配置显示
+    scheduleEnabled.addEventListener('change', function() {
+        scheduleConfig.style.display = this.checked ? 'block' : 'none';
+    });
+    
+    // 切换调度类型
+    scheduleType.addEventListener('change', function() {
+        if (this.value === 'interval') {
+            intervalConfig.style.display = 'block';
+            cronConfig.style.display = 'none';
+        } else {
+            intervalConfig.style.display = 'none';
+            cronConfig.style.display = 'block';
+        }
+    });
+    
+    // 切换自定义间隔
+    scheduleInterval.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customIntervalGroup.style.display = 'block';
+        } else {
+            customIntervalGroup.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

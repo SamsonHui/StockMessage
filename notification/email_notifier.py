@@ -87,6 +87,56 @@ class EmailNotifier(BaseNotifier):
             logger.error(f"邮件发送失败: {str(e)}")
             return False
     
+    def _html_to_text(self, html_content: str) -> str:
+        """将HTML内容转换为纯文本，正确处理换行和格式"""
+        import re
+        
+        if not html_content:
+            return ""
+        
+        text = html_content
+        
+        # 处理换行标签
+        text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+        text = re.sub(r'</p>', '\n\n', text, flags=re.IGNORECASE)
+        text = re.sub(r'</div>', '\n', text, flags=re.IGNORECASE)
+        text = re.sub(r'</h[1-6]>', '\n\n', text, flags=re.IGNORECASE)
+        text = re.sub(r'</li>', '\n', text, flags=re.IGNORECASE)
+        
+        # 处理列表项
+        text = re.sub(r'<li[^>]*>', '• ', text, flags=re.IGNORECASE)
+        
+        # 移除所有其他HTML标签
+        text = re.sub(r'<[^>]+>', '', text)
+        
+        # 解码HTML实体
+        text = text.replace('&lt;', '<').replace('&gt;', '>')
+        text = text.replace('&amp;', '&').replace('&nbsp;', ' ')
+        text = text.replace('&quot;', '"').replace('&#39;', "'")
+        text = text.replace('&ldquo;', '"').replace('&rdquo;', '"')
+        text = text.replace('&lsquo;', "'").replace('&rsquo;', "'")
+        
+        # 清理多余的空白字符，但保留换行
+        lines = text.split('\n')
+        cleaned_lines = []
+        for line in lines:
+            # 清理每行内部的多余空格
+            cleaned_line = re.sub(r'\s+', ' ', line.strip())
+            cleaned_lines.append(cleaned_line)
+        
+        # 移除多余的空行，但保留段落间的单个空行
+        result_lines = []
+        prev_empty = False
+        for line in cleaned_lines:
+            if line:
+                result_lines.append(line)
+                prev_empty = False
+            elif not prev_empty:
+                result_lines.append('')
+                prev_empty = True
+        
+        return '\n'.join(result_lines).strip()
+    
     def _process_images_in_content(self, content: str) -> tuple[str, List[tuple[str, str]]]:
         """处理内容中的图片，返回处理后的内容和图片附件列表"""
         if not content:
@@ -100,13 +150,13 @@ class EmailNotifier(BaseNotifier):
         direct_img_pattern = r'/static/images/cache/([^\s<>"\'\']+)'
         
         # 处理链接格式的图片
-        matches = re.finditer(cache_img_pattern, content)
+        matches = list(re.finditer(cache_img_pattern, content))
         for i, match in enumerate(matches):
             img_url = match.group(1)
             img_path = os.path.join(config.BASE_DIR, img_url.lstrip('/'))
             
             if os.path.exists(img_path):
-                cid = f"image_{i+1}"
+                cid = f"image_{len(image_attachments)+1}"
                 image_attachments.append((img_path, cid))
                 
                 # 替换为HTML img标签
@@ -114,14 +164,15 @@ class EmailNotifier(BaseNotifier):
                 img_tag = f'<img src="cid:{cid}" alt="{img_filename}" style="max-width: 100%; height: auto; border-radius: 4px; margin: 10px 0;">'
                 processed_content = processed_content.replace(match.group(0), img_tag)
         
-        # 处理直接的图片路径
-        direct_matches = re.finditer(direct_img_pattern, processed_content)
-        for i, match in enumerate(direct_matches, len(image_attachments)):
+        # 处理直接的图片路径（避免重复处理）
+        remaining_matches = re.finditer(direct_img_pattern, processed_content)
+        for match in remaining_matches:
             img_url = match.group(0)
             img_path = os.path.join(config.BASE_DIR, img_url.lstrip('/'))
             
+            # 检查是否已经处理过这个图片
             if os.path.exists(img_path) and img_path not in [att[0] for att in image_attachments]:
-                cid = f"image_{i+1}"
+                cid = f"image_{len(image_attachments)+1}"
                 image_attachments.append((img_path, cid))
                 
                 # 替换为HTML img标签
@@ -130,23 +181,6 @@ class EmailNotifier(BaseNotifier):
                 processed_content = processed_content.replace(img_url, img_tag)
         
         return processed_content, image_attachments
-    
-    def _html_to_text(self, html_content: str) -> str:
-        """将HTML内容转换为纯文本"""
-        # 简单的HTML到文本转换
-        import re
-        
-        # 移除HTML标签
-        text = re.sub(r'<[^>]+>', '', html_content)
-        
-        # 解码HTML实体
-        text = text.replace('&lt;', '<').replace('&gt;', '>').replace('&amp;', '&')
-        text = text.replace('&nbsp;', ' ').replace('&quot;', '"')
-        
-        # 清理多余的空白字符
-        text = re.sub(r'\s+', ' ', text).strip()
-        
-        return text
     
     def _format_html_content(self, content: str) -> str:
         """格式化HTML邮件内容"""

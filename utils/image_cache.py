@@ -34,6 +34,7 @@ class ImageCache:
         # 匹配图片URL的正则表达式
         img_url_patterns = [
             r'https?://[^\s<>"]+\.(?:jpg|jpeg|png|gif|webp)(?:\?[^\s<>"]*)?',  # 直接图片链接
+            r'//[^\s<>"]+\.(?:jpg|jpeg|png|gif|webp)(?:\?[^\s<>"]*)?',  # 协议相对URL
             r'<img[^>]+src=["\']([^"\'>]+)["\'][^>]*>',  # HTML img标签
             r'!\[([^\]]*)\]\(([^)]+)\)',  # Markdown图片语法
         ]
@@ -45,19 +46,26 @@ class ImageCache:
             for match in matches:
                 if 'src=' in pattern:  # HTML img标签
                     img_url = match.group(1)
+                    # 处理协议相对URL
+                    if img_url.startswith('//'):
+                        img_url = 'https:' + img_url
                     cached_url = self._cache_image(img_url)
                     if cached_url:
                         processed_content = processed_content.replace(match.group(1), cached_url)
                 elif '![' in pattern:  # Markdown语法
                     img_url = match.group(2)
+                    if img_url.startswith('//'):
+                        img_url = 'https:' + img_url
                     cached_url = self._cache_image(img_url)
                     if cached_url:
                         processed_content = processed_content.replace(match.group(2), cached_url)
                 else:  # 直接链接
                     img_url = match.group(0)
+                    if img_url.startswith('//'):
+                        img_url = 'https:' + img_url
                     cached_url = self._cache_image(img_url)
                     if cached_url:
-                        processed_content = processed_content.replace(img_url, cached_url)
+                        processed_content = processed_content.replace(match.group(0), cached_url)
         
         return processed_content
     
@@ -69,6 +77,7 @@ class ImageCache:
         urls = []
         img_url_patterns = [
             r'https?://[^\s<>"]+\.(?:jpg|jpeg|png|gif|webp)(?:\?[^\s<>"]*)?',
+            r'//[^\s<>"]+\.(?:jpg|jpeg|png|gif|webp)(?:\?[^\s<>"]*)?',  # 新增协议相对URL
             r'<img[^>]+src=["\']([^"\'>]+)["\'][^>]*>',
             r'!\[([^\]]*)\]\(([^)]+)\)',
         ]
@@ -77,17 +86,30 @@ class ImageCache:
             matches = re.finditer(pattern, content, re.IGNORECASE)
             for match in matches:
                 if 'src=' in pattern:
-                    urls.append(match.group(1))
+                    url = match.group(1)
+                    if url.startswith('//'):
+                        url = 'https:' + url
+                    urls.append(url)
                 elif '![' in pattern:
-                    urls.append(match.group(2))
+                    url = match.group(2)
+                    if url.startswith('//'):
+                        url = 'https:' + url
+                    urls.append(url)
                 else:
-                    urls.append(match.group(0))
+                    url = match.group(0)
+                    if url.startswith('//'):
+                        url = 'https:' + url
+                    urls.append(url)
         
         return list(set(urls))  # 去重
     
     def _cache_image(self, img_url: str) -> Optional[str]:
         """缓存单个图片，返回本地URL"""
         try:
+            # 处理协议相对URL
+            if img_url.startswith('//'):
+                img_url = 'https:' + img_url
+            
             # 生成缓存文件名
             url_hash = hashlib.md5(img_url.encode()).hexdigest()
             parsed_url = urlparse(img_url)

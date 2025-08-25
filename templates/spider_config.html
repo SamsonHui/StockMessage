@@ -3,133 +3,137 @@
 {% block title %}爬虫配置 - 股票消息爬虫管理系统{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1><i class="bi bi-robot"></i> 爬虫配置管理</h1>
-            <a href="{{ url_for('spider.add_spider_config') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> 添加爬虫配置
-            </a>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-robot"></i> 爬虫配置管理</h1>
+                <a href="{{ url_for('spider.add_spider_config') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> 添加爬虫配置
+                </a>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-list-ul"></i> 爬虫配置列表</h5>
-            </div>
-            <div class="card-body">
-                {% if configs %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>状态</th>
-                                <th>平台</th>
-                                <th>用户ID</th>
-                                <th>用户名</th>
-                                <th>定时配置</th>
-                                <th>上次执行</th>
-                                <th>下次执行</th>
-                                <th>创建时间</th>
-                                <th>通知配置</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        
-                        <tbody>
-                            {% for config in configs %}
-                            <tr>
-                                <td>
-                                    <span class="badge {{ 'bg-success' if config.enabled else 'bg-secondary' }}">
-                                        {{ '启用' if config.enabled else '禁用' }}
-                                    </span>
-                                </td>
-                                <td>{{ config.platform }}</td>
-                                <td>{{ config.user_id }}</td>
-                                <td>{{ config.username or '-' }}</td>
-                                <td>
-                                    {% if config.schedule_enabled %}
-                                        <span class="badge bg-info">
-                                            {% if config.schedule_type == 'interval' %}
-                                                间隔: {{ config.schedule_interval }}秒
-                                            {% else %}
-                                                Cron: {{ config.cron_expression }}
-                                            {% endif %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> 爬虫配置列表</h5>
+                </div>
+                <div class="card-body">
+                    {% if configs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">状态</th>
+                                    <th style="width: 100px;">平台</th>
+                                    <th style="width: 120px;">用户ID</th>
+                                    <th style="width: 120px;">用户名</th>
+                                    <th style="width: 140px;">定时配置</th>
+                                    <th style="width: 120px;">上次执行</th>
+                                    <th style="width: 120px;">下次执行</th>
+                                    <th style="width: 140px;">创建时间</th>
+                                    <th style="width: 120px;">通知配置</th>
+                                    <th style="width: 280px;">操作</th>
+                                </tr>
+                            </thead>
+                            
+                            <tbody>
+                                {% for config in configs %}
+                                <tr>
+                                    <td>
+                                        <span class="badge {{ 'bg-success' if config.enabled else 'bg-secondary' }}">
+                                            {{ '启用' if config.enabled else '禁用' }}
                                         </span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">已禁用</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if config.last_run_time %}
-                                        {{ config.last_run_time.strftime('%m-%d %H:%M') }}
-                                    {% else %}
-                                        <span class="text-muted">未执行</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if config.next_run_time %}
-                                        {{ config.next_run_time.strftime('%m-%d %H:%M') }}
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ config.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                <td>
-                                    {% if config.notification_configs %}
-                                        {% for notif in config.notification_configs %}
-                                            <span class="badge bg-primary me-1">{{ notif.method }}</span>
-                                        {% endfor %}
-                                    {% else %}
-                                        <span class="text-muted">无</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleExpandRow({{ config.id }})">
-                                            <i class="bi bi-chevron-down" id="expand-icon-{{ config.id }}"></i> 展开
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-success" onclick="manualExecute({{ config.id }})">
-                                            <i class="bi bi-play-circle"></i> 执行
-                                        </button>
-                                        <a href="{{ url_for('spider.edit_spider_notification', config_id=config.id) }}" class="btn btn-sm btn-outline-warning">
-                                            <i class="bi bi-bell"></i> 通知
-                                        </a>
-                                        <button type="button" class="btn btn-sm {{ 'btn-outline-danger' if config.enabled else 'btn-outline-success' }}" onclick="toggleSpider({{ config.id }})">
-                                            <i class="bi {{ 'bi-pause' if config.enabled else 'bi-play' }}"></i>
-                                            {{ '禁用' if config.enabled else '启用' }}
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- 添加展开行 -->
-                            <tr id="expand-row-{{ config.id }}" style="display: none;">
-                                <td colspan="10">
-                                    <div class="p-3 bg-light">
-                                        <h6><i class="bi bi-clock-history"></i> 最近数据</h6>
-                                        <div id="recent-data-{{ config.id }}">
-                                            <!-- 数据将通过AJAX加载 -->
+                                    </td>
+                                    <td>{{ config.platform }}</td>
+                                    <td class="text-truncate" style="max-width: 120px;" title="{{ config.user_id }}">{{ config.user_id }}</td>
+                                    <td class="text-truncate" style="max-width: 120px;" title="{{ config.username or '-' }}">{{ config.username or '-' }}</td>
+                                    <td>
+                                        {% if config.schedule_enabled %}
+                                            <span class="badge bg-info">
+                                                {% if config.schedule_type == 'interval' %}
+                                                    间隔: {{ config.schedule_interval }}秒
+                                                {% else %}
+                                                    Cron: {{ config.cron_expression }}
+                                                {% endif %}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">已禁用</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if config.last_run_time %}
+                                            {{ config.last_run_time.strftime('%m-%d %H:%M') }}
+                                        {% else %}
+                                            <span class="text-muted">未执行</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if config.next_run_time %}
+                                            {{ config.next_run_time.strftime('%m-%d %H:%M') }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ config.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        {% if config.notification_configs %}
+                                            {% for notif in config.notification_configs %}
+                                                <span class="badge bg-primary me-1">{{ notif.method }}</span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">无</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-primary" onclick="toggleExpandRow({{ config.id }})" title="展开详情">
+                                                <i class="bi bi-chevron-down" id="expand-icon-{{ config.id }}"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success" onclick="manualExecute({{ config.id }})" title="手动执行">
+                                                <i class="bi bi-play-circle"></i>
+                                            </button>
+                                            <a href="{{ url_for('spider.edit_spider_schedule', config_id=config.id) }}" class="btn btn-outline-info" title="编辑定时配置">
+                                                <i class="bi bi-clock"></i>
+                                            </a>
+                                            <a href="{{ url_for('spider.edit_spider_notification', config_id=config.id) }}" class="btn btn-outline-warning" title="编辑通知配置">
+                                                <i class="bi bi-bell"></i>
+                                            </a>
+                                            <button type="button" class="btn {{ 'btn-outline-danger' if config.enabled else 'btn-outline-success' }}" onclick="toggleSpider({{ config.id }})" title="{{ '禁用' if config.enabled else '启用' }}">
+                                                <i class="bi {{ 'bi-pause' if config.enabled else 'bi-play' }}"></i>
+                                            </button>
                                         </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                    </td>
+                                </tr>
+                                <!-- 添加展开行 -->
+                                <tr id="expand-row-{{ config.id }}" style="display: none;">
+                                    <td colspan="10">
+                                        <div class="p-3 bg-light">
+                                            <h6><i class="bi bi-clock-history"></i> 最近数据</h6>
+                                            <div id="recent-data-{{ config.id }}">
+                                                <!-- 数据将通过AJAX加载 -->
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-robot text-muted" style="font-size: 4rem;"></i>
+                        <h4 class="text-muted mt-3">暂无爬虫配置</h4>
+                        <p class="text-muted">点击上方按钮添加第一个爬虫配置</p>
+                        <a href="{{ url_for('spider.add_spider_config') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> 添加爬虫配置
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
-                {% else %}
-                <div class="text-center py-5">
-                    <i class="bi bi-robot text-muted" style="font-size: 4rem;"></i>
-                    <h4 class="text-muted mt-3">暂无爬虫配置</h4>
-                    <p class="text-muted">点击上方按钮添加第一个爬虫配置</p>
-                    <a href="{{ url_for('spider.add_spider_config') }}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> 添加爬虫配置
-                    </a>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
